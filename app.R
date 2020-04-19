@@ -5,6 +5,7 @@ library("shiny")
 library("scales")
 
 source("EstimatingR_shiny_func.R")
+source("case_sim.R")
 
 OW <- readRDS(file = "our_world_data.RDS")
 WO <- readRDS(file = "worldometer_data.RDS")
@@ -159,18 +160,89 @@ ui <- fluidPage(
              )
     ),
     
-    tabPanel("Simulation", fluid = TRUE,
+    tabPanel("Simulation (under construction)", fluid = TRUE,
              
              sidebarLayout(
                sidebarPanel(      
                  
-                 p("check 1")
+                 h4(em("Inputs to simulate new cases")),
+                 
+                 selectInput("source_data_1",
+                             label = "Select confirmed cases source data",
+                             choices = list("Our World in Data",
+                                            "Worldometer",
+                                            "John Hopkins University"),
+                             selected = "John Hopkins University"),
+                 
+                 dateRangeInput("date_range_1",
+                                label = "Choose date range",
+                                start = "2020-03-05",
+                                end = "2020-06-15",
+                                min = "2020-01-06",
+                                max = "2020-12-31"),
+                 
+                 numericInput("r_y_1",
+                              label = "Y-axis height: R estimate",
+                              value = NULL,
+                              min = 0.1,
+                              max = 15),
+                 
+                 numericInput("c_y_1",
+                              label = "Y-axis height: confirmed cases",
+                              value = NULL,
+                              min = 5,
+                              max = 100000),
+                 
+                 numericInput("sim_delay",
+                              label = "Days till simulated new cases",
+                              value = 5,
+                              min = 2,
+                              max = 30),
+                 
+                 numericInput("sim_dur",
+                              label = "Duration of simulated cases",
+                              value = 60,
+                              min = 5,
+                              max = 150),
+                 
+                 numericInput("sim_cases",
+                              label = "Starting number of new cases",
+                              value = 5,
+                              min = 0,
+                              max = 100),
+                 
+                 sliderInput("sim_g", "Starting case growth rate",
+                             min = 0, max = 1,
+                             value = 0.45, step = 0.05),
+                 
+                 sliderInput("sim_k_1", "Logistic curve steepness during growth phase",
+                             min = 0, max = 1,
+                             value = 0.4, step = 0.05),
+                 
+                 sliderInput("sim_k_2", "Logistic curve steepness during decay phase",
+                             min = 0, max = 1,
+                             value = 0.25, step = 0.05),
+                 
+                 sliderInput("sim_bias", "Logistic curve mid-point bias",
+                             min = -30, max = 30,
+                             value = -12, step = 1)
                  
                ),
                
                mainPanel(
                  
-                 p("check 2")  
+                 br(),
+                 
+                 textOutput("source_selection_1"),
+                 textOutput("date_selection_1"),
+                 
+                 plotOutput("map_1"),
+                 
+                 p("Logistic function (sigmoid curve):"),
+                 
+                 p(" -1 / (1 + exp( -k * (x - midpoint))) + 1"),
+                 
+                 p("k is the steepness of the growth and decay curve, which define the curves located on either side of the chosen mid-point.")
                  
                  
                ) 
@@ -197,6 +269,10 @@ ui <- fluidPage(
       paste("Source data:", input$source_data)
     })
     
+    output$source_selection_1 <- renderText({
+      paste("Source data:", input$source_data_1)
+    })
+    
     output$si_selection <- renderText({
       paste0("Serial interval mean (standard deviation): ", input$mean, 
              " (", input$standard_deviation, ")")
@@ -205,6 +281,11 @@ ui <- fluidPage(
     output$date_selection <- renderText({
       paste("Display data range:", input$date_range[1], 
             "to", input$date_range[2])
+    })
+    
+    output$date_selection_1 <- renderText({
+      paste("Display data range:", input$date_range_1[1], 
+            "to", input$date_range_1[2])
     })
     
     output$map <- renderPlot({
@@ -224,6 +305,34 @@ ui <- fluidPage(
       
       ggarrange(gr[[1]], gr[[2]], ncol = 1, align = "v")
       
+    })
+    
+    output$map_1 <- renderPlot({
+
+      source_1 <- switch(input$source_data_1,
+                       "Our World in Data" = OW,
+                       "Worldometer" = WO,
+                       "John Hopkins University" = JH)
+
+      sim <- case_sim(source_1,
+                      input$sim_delay,
+                      input$sim_dur,
+                      input$sim_cases,
+                      input$sim_g,
+                      input$sim_k_1,
+                      input$sim_k_2,
+                      input$sim_bias)
+
+      gr_1 <- esti_r(sim,
+                    input$mean,
+                    input$standard_deviation,
+                    input$date_range_1[1],
+                    input$date_range_1[2],
+                    input$r_y_1,
+                    input$c_y_1)
+
+       ggarrange(gr_1[[1]], gr_1[[2]], ncol = 1, align = "v")
+
     })
     
   }

@@ -1,9 +1,7 @@
 
 esti_r <- function(source, si_mean, si_sd, d_min, d_max, r_y, c_y){
   
-  # have default options if no inputs passed in
-  
-  data = source
+  data <- source
   
   R_results <- estimate_R(data$cases,
                           method = "parametric_si",
@@ -46,7 +44,6 @@ esti_r <- function(source, si_mean, si_sd, d_min, d_max, r_y, c_y){
     y_max_c <- heightcheck_c * 1.2
     
   }
-
   
   p_r <- ggplot(R_results, aes(dates, `Mean(R)`)) +
     geom_ribbon(aes(ymin = `Quantile.0.05(R)`, 
