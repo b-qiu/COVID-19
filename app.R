@@ -3,6 +3,7 @@ library("tidyverse")
 library("ggpubr")
 library("shiny")
 library("scales")
+library("shinyjs")
 
 source("EstimatingR_shiny_func.R")
 source("case_sim.R")
@@ -14,6 +15,9 @@ JH <- readRDS(file = "john_hopkins_data.RDS")
 max_date <- Sys.Date() + 1
 
 ui <- fluidPage(
+  
+  withMathJax(),
+  useShinyjs(),
   
   titlePanel("Estimating Australia's COVID-19 instantaneous reproduction number"),
   
@@ -57,17 +61,11 @@ ui <- fluidPage(
                                 min = "2020-01-06",
                                 max = max_date),
                  
-                 numericInput("r_y",
-                              label = "Y-axis height: R estimate",
-                              value = NULL,
-                              min = 0.1,
-                              max = 15),
+                 checkboxInput("y_axes",
+                               label = "Set Y-axis heights",
+                               value = FALSE),
                  
-                 numericInput("c_y",
-                              label = "Y-axis height: confirmed cases",
-                              value = NULL,
-                              min = 5,
-                              max = 100000),
+                 uiOutput(outputId = "yy"),
                  
                  hr(),
                  
@@ -88,6 +86,7 @@ ui <- fluidPage(
                               max = 1),
                  
                  p("Herd immunity threshold:"),
+                 
                  strong(textOutput("Herd")),
                  
                  br(),
@@ -119,16 +118,18 @@ ui <- fluidPage(
                  
                  plotOutput("map"),
                  
-                 h4("Simple explanation"),
-                 
                  strong("Inputs:"),
                  
-                 p(em("Cases:"), "new cases over time measured in days. Note I did not make a distinction between imported and local cases."),
+                 p(em("Cases:"), "new daily cases over time. Note I did not make a distinction between imported and local cases."),
                  p(em("Serial interval:"), "the period between successive cases in a chain of transmission measured in days."),
                  
                  strong("Output:"),
                  
                  p(em("R:"), "the expected number of secondary cases caused by each infected individual. Calculated using a rolling weekly window."),
+                 
+                 br(),
+                 
+                 h4("Simple explanation"),
                  
                  p("The instantaneous reproduction number (the expected number of secondary cases caused by each infected individual) is the number of newly infected cases at a given point in time, divided by the total infection potential across all infected individuals at that time. "),
                  
@@ -137,8 +138,6 @@ ui <- fluidPage(
                  p("The complete estimation process is listed in the Epidemics paper shown below."),
                  
                  p("Levels of R below 1 suggest interventions have been succesful. Established outbreaks will fade out if the number is maintained below 1."),
-                 
-                 br(),
                  
                  h4("Supporting information"),
                  
@@ -181,17 +180,14 @@ ui <- fluidPage(
                                 min = "2020-01-06",
                                 max = "2020-12-31"),
                  
-                 numericInput("r_y_1",
-                              label = "Y-axis height: R estimate",
-                              value = NULL,
-                              min = 0.1,
-                              max = 15),
+                 checkboxInput("y_axes_1",
+                               label = "Set Y-axis heights",
+                               value = FALSE),
                  
-                 numericInput("c_y_1",
-                              label = "Y-axis height: confirmed cases",
-                              value = NULL,
-                              min = 5,
-                              max = 100000),
+                 uiOutput(outputId = "yy_1"),
+                 
+                 
+                 hr(),
                  
                  numericInput("sim_delay",
                               label = "Days till simulated new cases",
@@ -215,17 +211,19 @@ ui <- fluidPage(
                              min = 0, max = 1,
                              value = 0.45, step = 0.05),
                  
+                 sliderInput("sim_bias", "Logistic curve mid-point bias",
+                             min = -30, max = 30,
+                             value = -12, step = 1),
+                 
                  sliderInput("sim_k_1", "Logistic curve steepness during growth phase",
                              min = 0, max = 1,
                              value = 0.4, step = 0.05),
                  
                  sliderInput("sim_k_2", "Logistic curve steepness during decay phase",
                              min = 0, max = 1,
-                             value = 0.25, step = 0.05),
+                             value = 0.25, step = 0.05)
                  
-                 sliderInput("sim_bias", "Logistic curve mid-point bias",
-                             min = -30, max = 30,
-                             value = -12, step = 1)
+
                  
                ),
                
@@ -236,15 +234,23 @@ ui <- fluidPage(
                  textOutput("source_selection_1"),
                  textOutput("date_selection_1"),
                  
+                 
+                 
                  plotOutput("map_1"),
                  
                  p("Logistic function (sigmoid curve):"),
                  
-                 p(" -1 / (1 + exp( -k * (x - midpoint))) + 1"),
+                 uiOutput("logi"),
                  
-                 p("k is the steepness of the growth and decay curve, which define the curves located on either side of the chosen mid-point.")
+                 p("The logistic function is broken into two components at the defined \"mid-point bias\" point."),
                  
+                 p("The first component represents the growth phase of the curve, and the second component represents the decay phase."),
                  
+                 p("The steepeness of each phase is defined by their respective \"k\" terms."),
+                 
+                 p("Combined, the resultant curve defines the overall shape of the growth factor applied to the simulated cases."),
+                 
+                 plotOutput("map_2", height = "600px")
                ) 
              )
              
@@ -288,6 +294,87 @@ ui <- fluidPage(
             "to", input$date_range_1[2])
     })
     
+    output$yy <- renderUI({
+      
+      inputlist <- list()
+      
+      inputlist[[1]]<- numericInput("r_y",
+                   label = "Y-axis height: R estimate",
+                   value = NULL,
+                   min = 0.1,
+                   max = 15)
+      
+      inputlist[[2]] <- numericInput("c_y",
+                   label = "Y-axis height: confirmed cases",
+                   value = NULL,
+                   min = 5,
+                   max = 100000)
+      
+      tagList(inputlist)
+      
+      shinyjs::hidden(inputlist)
+
+    })
+    
+    output$yy_1 <- renderUI({
+      
+      inputlist_1 <- list()
+      
+      inputlist_1[[1]]<- numericInput("r_y_1",
+                                    label = "Y-axis height: R estimate",
+                                    value = NULL,
+                                    min = 0.1,
+                                    max = 15)
+      
+      inputlist_1[[2]] <- numericInput("c_y_1",
+                                     label = "Y-axis height: confirmed cases",
+                                     value = NULL,
+                                     min = 5,
+                                     max = 100000)
+      
+      tagList(inputlist_1)
+      
+      shinyjs::hidden(inputlist_1)
+      
+    })
+    
+    observe({
+      
+      if(input$y_axes == T){
+        
+        shinyjs::show("r_y")
+        shinyjs::show("c_y")
+      }
+      
+      if(input$y_axes == F){
+        
+        shinyjs::hide("r_y")
+        shinyjs::hide("c_y")
+        
+      }
+      
+      if(input$y_axes_1 == T){
+        
+        shinyjs::show("r_y_1")
+        shinyjs::show("c_y_1")
+      }
+      
+      if(input$y_axes_1 == F){
+        
+        shinyjs::hide("r_y_1")
+        shinyjs::hide("c_y_1")
+        
+      }
+      
+    })
+      
+    
+    output$logi <- renderUI({
+      withMathJax(
+        p("$$\\frac{-1}{1+e^{-k (x - midpoint)}} + 1$$")
+      )
+    })
+    
     output$map <- renderPlot({
       
       source <- switch(input$source_data,
@@ -323,7 +410,7 @@ ui <- fluidPage(
                       input$sim_k_2,
                       input$sim_bias)
 
-      gr_1 <- esti_r(sim,
+      gr_1 <- esti_r(sim[[1]],
                     input$mean,
                     input$standard_deviation,
                     input$date_range_1[1],
@@ -331,8 +418,28 @@ ui <- fluidPage(
                     input$r_y_1,
                     input$c_y_1)
 
-       ggarrange(gr_1[[1]], gr_1[[2]], ncol = 1, align = "v")
+      ggarrange(gr_1[[1]], gr_1[[2]], ncol = 1, align = "v")
 
+    })
+    
+    output$map_2 <- renderPlot({
+    
+      source_1 <- switch(input$source_data_1,
+                         "Our World in Data" = OW,
+                         "Worldometer" = WO,
+                         "John Hopkins University" = JH)
+      
+      sim <- case_sim(source_1,
+                      input$sim_delay,
+                      input$sim_dur,
+                      input$sim_cases,
+                      input$sim_g,
+                      input$sim_k_1,
+                      input$sim_k_2,
+                      input$sim_bias)
+        
+      sim[[2]]
+      
     })
     
   }

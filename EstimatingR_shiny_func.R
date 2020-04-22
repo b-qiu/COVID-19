@@ -55,7 +55,7 @@ esti_r <- function(source, si_mean, si_sd, d_min, d_max, r_y, c_y){
     ggtitle("Estimated instantaneous reproduction number") +
     theme_bw() +
     labs(y = "Estimated R (95% CI)") +
-    theme_update(plot.margin = margin(20, 20, 20, 20),
+    theme_update(plot.margin = margin(10, 10, 10, 10),
                  axis.title.x = element_blank())
   
   p_c <- ggplot(R_results, aes(dates, cases)) +
@@ -65,9 +65,9 @@ esti_r <- function(source, si_mean, si_sd, d_min, d_max, r_y, c_y){
     theme_bw() +
     ggtitle("Number of confirmed new cases") +
     labs(y = "Number of new cases") +
-    theme_update(plot.margin = margin(20, 20, 20, 20),
+    theme_update(plot.margin = margin(10, 10, 10, 10),
                  axis.title.x = element_blank())
-  
+   
   plots <- list(p_r, p_c)
   
   return(plots)
