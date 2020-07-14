@@ -4,7 +4,7 @@ p_load("tidyverse", "rvest", "qdapRegex",
 
 options(gargle_oauth_cache = ".secrets")
 
-gs4_auth(email = "jumpy.snail@gmail.com",
+gs4_auth(email = XXXX,
   cache = ".secrets")
 
 jh <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv") %>%
