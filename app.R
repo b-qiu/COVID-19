@@ -15,11 +15,11 @@ source("case_sim.R")
 # WO <- readRDS(file = "worldometer_data.RDS")
 # JH <- readRDS(file = "john_hopkins_data.RDS")
 
-OW <- read_sheet("1OfdJUC-1nB8cqQ0HsrCpNFC8yPDjDPUUkQFxZA6EdYY", sheet = "ow") %>%
+OW <- read_sheet(GOOGLESHEETADDRESS, sheet = "ow") %>%
   mutate(dates = as.Date(dates))
-JH <- read_sheet("1OfdJUC-1nB8cqQ0HsrCpNFC8yPDjDPUUkQFxZA6EdYY", sheet = "jh") %>%
+JH <- read_sheet(GOOGLESHEETADDRESS, sheet = "jh") %>%
   mutate(dates = as.Date(dates))
-WO <- read_sheet("1OfdJUC-1nB8cqQ0HsrCpNFC8yPDjDPUUkQFxZA6EdYY", sheet = "wo") %>%
+WO <- read_sheet(GOOGLESHEETADDRESS, sheet = "wo") %>%
   mutate(dates = as.Date(dates))
 
 max_date <- Sys.Date() + 1
